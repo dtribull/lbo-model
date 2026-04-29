@@ -157,7 +157,7 @@ def _write_inputs_sheet(wb: Workbook, overrides: dict) -> dict:
     ws.column_dimensions["C"].width = 18
 
     # Title
-    t = ws.cell(1, 2, "Peak Frameworks LBO Model — Inputs")
+    t = ws.cell(1, 2, "LBO Model Template — Inputs")
     _apply(t, bold=True, size=13, color=HDR_BG, h="left")
     t2 = ws.cell(2, 2, "Change any blue cell — the Model sheet recalculates automatically.")
     _apply(t2, size=9, color="595959", italic=True, h="left")
@@ -345,7 +345,7 @@ def _build_model_formulas(W: _W, I: dict, N: int):
     # TITLE
     # =========================================================================
     if not W.simulate:
-        t = ws.cell(W.row, COL_LABEL, "Peak Frameworks — LBO Model")
+        t = ws.cell(W.row, COL_LABEL, "LBO Model Template")
         _apply(t, bold=True, size=14, color=HDR_BG, h="left")
     W.row += 1
     if not W.simulate:
@@ -975,13 +975,14 @@ def _build_model_formulas(W: _W, I: dict, N: int):
                 base_cell_flag = base_row_flag and abs(float(xm) - cfg.EXIT_MULTIPLE) < 0.001
                 col = COL_LABEL + 1 + j
 
-                # References to the axis header cells
-                em_ref  = f"${_cl(COL_LABEL)}${data_row}"
+                # em is a hardcoded float (label cell contains text "11.0x", not a number)
+                # xm_ref references the header cell which stores a real float
                 xm_ref  = f"${_cl(col)}${hdr_row}"
+                em_val  = float(em)   # use numeric value directly in formula
 
                 # pe_invest for this entry multiple:
                 # = (ENTRY_EBITDA * em + CASH_TO_BS + total_fees + TX_EXPENSES - total_debt) * (1-ROLLOVER)
-                pe_i = (f"=({i('ENTRY_EBITDA')}*{em_ref}+{i('CASH_TO_BS')}+{fees_ref}"
+                pe_i = (f"=({i('ENTRY_EBITDA')}*{em_val}+{i('CASH_TO_BS')}+{fees_ref}"
                         f"+{i('TRANSACTION_EXPENSES')}-{td_ref})*(1-{i('ROLLOVER_EQUITY_PCT')})")
 
                 # value to PE for this exit multiple:
@@ -990,10 +991,10 @@ def _build_model_formulas(W: _W, I: dict, N: int):
 
                 if is_irr:
                     # IRR = (MoM)^(1/N) - 1
-                    fml = (f"=({v2pe}/({i('ENTRY_EBITDA')}*{em_ref}+{i('CASH_TO_BS')}"
+                    fml = (f"=({v2pe}/({i('ENTRY_EBITDA')}*{em_val}+{i('CASH_TO_BS')}"
                            f"+{fees_ref}+{i('TRANSACTION_EXPENSES')}-{td_ref}))^(1/{i('HOLD_YEARS')})-1")
                 else:
-                    fml = (f"={v2pe}/({i('ENTRY_EBITDA')}*{em_ref}+{i('CASH_TO_BS')}"
+                    fml = (f"={v2pe}/({i('ENTRY_EBITDA')}*{em_val}+{i('CASH_TO_BS')}"
                            f"+{fees_ref}+{i('TRANSACTION_EXPENSES')}-{td_ref})")
 
                 if not W.simulate:
