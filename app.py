@@ -1,5 +1,5 @@
 # =============================================================================
-# app.py — Peak Frameworks LBO Model | Streamlit Web App
+# app.py — LBO Model Teacher | Streamlit Web App
 # =============================================================================
 #
 #  Run:  streamlit run app.py
@@ -39,7 +39,7 @@ import transaction as txn_mod
 # PAGE CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Peak Frameworks — LBO Model",
+    page_title="LBO Model Teacher",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -209,19 +209,21 @@ def mm_in(label: str, key: str, default: float, step: float = 10.0) -> float:
     return st.number_input(label, value=float(default), step=step,
                            format="%.1f", key=key)
 
-def x_in(label: str, key: str, default: float, step: float = 0.5) -> float:
+def x_in(label: str, key: str, default: float, step: float = 0.5,
+         help: str | None = None) -> float:
     """Multiple (x) number input."""
     return st.number_input(label, value=float(default), step=step,
-                           format="%.1f", key=key, min_value=0.0)
+                           format="%.1f", key=key, min_value=0.0, help=help)
 
-def pct_in(label: str, key: str, default_frac: float, step: float = 0.1) -> float:
+def pct_in(label: str, key: str, default_frac: float, step: float = 0.1,
+           help: str | None = None) -> float:
     """
     Percentage input displayed as whole number (e.g. 38.00 for 38%).
     Returns a decimal fraction (0.38).
     """
     val = st.number_input(
         label, value=round(default_frac * 100, 4),
-        step=step, format="%.2f", key=key, min_value=0.0
+        step=step, format="%.2f", key=key, min_value=0.0, help=help,
     )
     return val / 100.0
 
@@ -236,7 +238,7 @@ def int_in(label: str, key: str, default: int,
 # ─────────────────────────────────────────────────────────────────────────────
 st.markdown(
     f'<h2 style="color:{NAVY};margin:0 0 0px;font-size:1.5rem">'
-    "📊&nbsp; Peak Frameworks — LBO Model</h2>",
+    "📊&nbsp; LBO Model Teacher</h2>",
     unsafe_allow_html=True,
 )
 st.caption(
@@ -273,16 +275,40 @@ with left_col:
         ov["ENTRY_EBITDA"]  = mm_in("Entry EBITDA ($mm)",   "e_ebitda",   cfg.ENTRY_EBITDA,  25.0)
         ov["EXISTING_DEBT"] = mm_in("Existing Debt ($mm)",  "e_ex_debt",  cfg.EXISTING_DEBT, 25.0)
     with b:
-        ov["ENTRY_MULTIPLE"]= x_in( "Entry Multiple (x)",   "e_emult",    cfg.ENTRY_MULTIPLE)
+        ov["ENTRY_MULTIPLE"]= x_in( "Entry Multiple (x)",   "e_emult",    cfg.ENTRY_MULTIPLE,
+            help=(
+                "The price paid for the business expressed as a multiple of its LTM EBITDA — "
+                "e.g. 11x means you paid 11× the company's annual EBITDA.\n\n"
+                "📊 Typical range: 7x–14x depending on sector and market conditions; "
+                "software deals often trade at 12x–20x, industrials at 6x–9x.\n\n"
+                "📈 Effect on returns: a lower entry multiple means you pay less for the same "
+                "business, directly increasing IRR and MoM — it is one of the single biggest drivers of PE returns."
+            ))
         ov["EXISTING_CASH"] = mm_in("Existing Cash ($mm)",  "e_ex_cash",  cfg.EXISTING_CASH, 25.0)
 
     # ── 2. Transaction ────────────────────────────────────────────────────────
     sh("2 · Transaction")
     a, b = st.columns(2)
     with a:
-        ov["EXIT_MULTIPLE"]        = x_in( "Exit Multiple (x)",          "t_xmult",   cfg.EXIT_MULTIPLE)
+        ov["EXIT_MULTIPLE"]        = x_in( "Exit Multiple (x)",          "t_xmult",   cfg.EXIT_MULTIPLE,
+            help=(
+                "The EBITDA multiple at which the PE firm sells the business at exit — "
+                "determines the total enterprise value received.\n\n"
+                "📊 Typical range: same as entry, 7x–14x; analysts often assume entry = exit "
+                "(no multiple expansion) as a conservative base case.\n\n"
+                "📈 Effect on returns: every 1x increase in exit multiple adds roughly "
+                "EBITDA × (1 − net debt %) to equity value — highly sensitive at low leverage."
+            ))
         ov["CASH_TO_BS"]           = mm_in("Cash to B/S ($mm)",          "t_cash_bs", cfg.CASH_TO_BS,           10.0)
-        ov["ROLLOVER_EQUITY_PCT"]  = pct_in("Rollover Equity (%)",       "t_rollover",cfg.ROLLOVER_EQUITY_PCT)
+        ov["ROLLOVER_EQUITY_PCT"]  = pct_in("Rollover Equity (%)",       "t_rollover",cfg.ROLLOVER_EQUITY_PCT,
+            help=(
+                "The percentage of total equity that existing management or sellers reinvest "
+                "alongside the PE firm rather than cashing out — they 'roll' their equity into the new deal.\n\n"
+                "📊 Typical range: 10%–40%; management rollover aligns incentives and "
+                "reduces the cash the PE firm needs to write.\n\n"
+                "📈 Effect on returns: higher rollover reduces the PE firm's equity check, "
+                "which increases IRR if returns are positive — but also reduces the firm's absolute dollar gain."
+            ))
     with b:
         ov["TAX_RATE"]             = pct_in("Tax Rate (%)",              "t_tax",     cfg.TAX_RATE)
         ov["TRANSACTION_EXPENSES"] = mm_in("Transaction Expenses ($mm)", "t_txexp",   cfg.TRANSACTION_EXPENSES,  5.0)
@@ -300,7 +326,15 @@ with left_col:
     subh("Term Loan")
     a, b = st.columns(2)
     with a:
-        ov["TERM_LOAN_LEVERAGE"]   = x_in( "Leverage (x EBITDA)", "tl_lev",    cfg.TERM_LOAN_LEVERAGE)
+        ov["TERM_LOAN_LEVERAGE"]   = x_in( "Leverage (x EBITDA)", "tl_lev",    cfg.TERM_LOAN_LEVERAGE,
+            help=(
+                "The size of the Term Loan expressed as a multiple of EBITDA — e.g. 3x means "
+                "the TL principal equals 3× the company's annual EBITDA.\n\n"
+                "📊 Typical range: 2x–5x for the Term Loan alone; total leverage (TL + Mezz) "
+                "is typically 4x–6x in a healthy LBO market, constrained by lender appetite.\n\n"
+                "📈 Effect on returns: more debt means a smaller equity check and higher IRR "
+                "if the deal works — but also higher interest burden and greater downside risk."
+            ))
         ov["TERM_LOAN_FEE_PCT"]    = pct_in("Upfront Fee (%)",    "tl_fee",    cfg.TERM_LOAN_FEE_PCT)
     with b:
         ov["TERM_LOAN_SPREAD"]     = pct_in("Spread L+ (%)",      "tl_spread", cfg.TERM_LOAN_SPREAD)
@@ -310,7 +344,15 @@ with left_col:
     a, b = st.columns(2)
     with a:
         ov["MEZZ_LEVERAGE"]   = x_in( "Leverage (x EBITDA)", "mz_lev",  cfg.MEZZ_LEVERAGE)
-        ov["MEZZ_PIK_RATE"]   = pct_in("PIK Rate (%)",        "mz_pik",  cfg.MEZZ_PIK_RATE)
+        ov["MEZZ_PIK_RATE"]   = pct_in("PIK Rate (%)",        "mz_pik",  cfg.MEZZ_PIK_RATE,
+            help=(
+                "PIK stands for 'Payment in Kind' — instead of paying cash interest, "
+                "the interest accrues and is added to the loan balance each year, compounding over time.\n\n"
+                "📊 Typical range: 4%–8% for mezzanine PIK; total mezz return (cash + PIK) "
+                "is usually 10%–15%, sitting between senior debt and equity in the capital structure.\n\n"
+                "📈 Effect on returns: PIK reduces cash interest outflows (helping FCF and debt "
+                "paydown) but grows the mezz balance at exit, increasing net debt and reducing equity value."
+            ))
         ov["MEZZ_FEE_PCT"]    = pct_in("Upfront Fee (%)",     "mz_fee",  cfg.MEZZ_FEE_PCT)
     with b:
         ov["MEZZ_CASH_RATE"]  = pct_in("Cash Pay Rate (%)",   "mz_cash", cfg.MEZZ_CASH_RATE)
@@ -434,16 +476,18 @@ if save_clicked and not model_err:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# EXCEL BYTES — generated fresh each rerun so the file reflects current inputs
+# EXCEL BYTES — cached so it only regenerates when inputs actually change
 # ─────────────────────────────────────────────────────────────────────────────
-def _make_excel_bytes() -> bytes:
+@st.cache_data(show_spinner="Generating Excel…")
+def _make_excel_bytes(_txn, _results, _rets, _sens, _ov_frozen) -> bytes:
+    _ov = dict(_ov_frozen)
     with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
         tmp = f.name
     try:
         with contextlib.redirect_stdout(io.StringIO()):   # suppress print()
             xl_mod.write_excel(
-                txn, results, rets, sens,
-                overrides=ov,
+                _txn, _results, _rets, _sens,
+                overrides=_ov,
                 output_path=tmp,
             )
         with open(tmp, "rb") as fh:
@@ -859,14 +903,21 @@ with right_col:
     # ── Download Excel ────────────────────────────────────────────────────────
     st.divider()
 
-    excel_bytes = _make_excel_bytes()
-    st.download_button(
-        label="⬇  Download Excel Model",
-        data=excel_bytes,
-        file_name="lbo_model.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True,
-    )
+    try:
+        excel_bytes = _make_excel_bytes(
+            txn, results, rets, sens,
+            tuple(sorted(ov.items())),   # hashable for cache key
+        )
+        st.download_button(
+            label="⬇  Download Excel Model",
+            data=excel_bytes,
+            file_name="lbo_model.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+        )
+    except Exception as _xl_err:
+        st.error(f"Excel generation failed: {_xl_err}")
+
     st.caption(
         "The downloaded file has an **Inputs** sheet (blue editable cells) "
         "and a **Model** sheet with live Excel formulas — every cell recalculates "
