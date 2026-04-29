@@ -1,4 +1,4 @@
-# Peak Frameworks — LBO Model
+# LBO Model Teacher
 
 An interactive leveraged buyout (LBO) model built with Python and Streamlit. The app presents a two-column layout: the left column exposes all deal assumptions (entry/exit valuation, debt sizing across Term Loan, Mezzanine, and Revolver tranches, financial forecast drivers, and hold period) as live number inputs pre-filled with sensible defaults; the right column instantly recalculates and displays key outputs including IRR and MoM for every exit year, a value creation bridge chart decomposing returns into EBITDA growth, multiple expansion, and debt paydown, a stacked debt & cash balance chart over the hold period, IRR and MoM sensitivity tables, input validation warnings (high leverage, thin interest coverage, aggressive exit assumptions), a reverse solver that back-solves the exit multiple required to hit a target IRR, and a scenario manager that saves up to three named scenarios side by side for comparison. A Download Excel button generates a fully-linked two-sheet workbook (blue editable Inputs sheet + formula-driven Model sheet) on demand.
 
